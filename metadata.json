@@ -1,0 +1,6 @@
+{
+  "name": "AutoDoc Rec",
+  "description": "Automated and manual dual-view (Desktop + Mobile) video tutorial recorder with cursor tracking, audio capture, crash recovery, and instant local export.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
