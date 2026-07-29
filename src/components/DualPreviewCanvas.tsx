@@ -111,7 +111,30 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
     });
   };
 
-  // Continuous Offscreen High-Res Canvas Compositor & Capture Stream loop
+  // Refs for animation frame state to prevent re-subscribing stream on state updates
+  const cursorPosRef = useRef(cursorPos);
+  const cursorConfigRef = useRef(cursorConfig);
+  const layoutModeRef = useRef(layoutMode);
+  const websiteUrlRef = useRef(websiteUrl);
+
+  useEffect(() => { cursorPosRef.current = cursorPos; }, [cursorPos]);
+  useEffect(() => { cursorConfigRef.current = cursorConfig; }, [cursorConfig]);
+  useEffect(() => { layoutModeRef.current = layoutMode; }, [layoutMode]);
+  useEffect(() => { websiteUrlRef.current = websiteUrl; }, [websiteUrl]);
+
+  // Initialize stream ONLY when canvas mounts or resolution/fps changes
+  useEffect(() => {
+    const canvas = hiddenCanvasRef.current;
+    if (!canvas || !onCanvasStreamReady) return;
+    try {
+      const stream = canvas.captureStream(fps);
+      onCanvasStreamReady(stream);
+    } catch (e) {
+      console.warn('captureStream failed:', e);
+    }
+  }, [fps, resolution, onCanvasStreamReady]);
+
+  // Continuous Offscreen High-Res Canvas Compositor loop (Optimized, lightweight 60fps)
   useEffect(() => {
     const canvas = hiddenCanvasRef.current;
     if (!canvas) return;
@@ -124,13 +147,12 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
     canvas.width = width;
     canvas.height = height;
 
-    // Send canvas stream if callback provided
-    if (onCanvasStreamReady) {
-      const stream = canvas.captureStream(fps);
-      onCanvasStreamReady(stream);
-    }
-
     const renderCanvasFrame = () => {
+      const currentCursorPos = cursorPosRef.current;
+      const currentCursorConfig = cursorConfigRef.current;
+      const currentLayoutMode = layoutModeRef.current;
+      const currentWebsiteUrl = websiteUrlRef.current;
+
       // 1. Clear background canvas with dark studio fill
       ctx.fillStyle = '#0f172a'; // slate-900
       ctx.fillRect(0, 0, width, height);
@@ -156,7 +178,7 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
       let desktopBox = { x: 0, y: 0, w: 0, h: 0 };
       let mobileBox = { x: 0, y: 0, w: 0, h: 0 };
 
-      if (layoutMode === 'side-by-side') {
+      if (currentLayoutMode === 'side-by-side') {
         desktopBox = {
           x: Math.round(width * 0.05),
           y: Math.round(height * 0.12),
@@ -169,21 +191,21 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
           w: Math.round(width * 0.23),
           h: Math.round(height * 0.78),
         };
-      } else if (layoutMode === 'desktop-only') {
+      } else if (currentLayoutMode === 'desktop-only') {
         desktopBox = {
           x: Math.round(width * 0.1),
           y: Math.round(height * 0.08),
           w: Math.round(width * 0.8),
           h: Math.round(height * 0.84),
         };
-      } else if (layoutMode === 'mobile-only') {
+      } else if (currentLayoutMode === 'mobile-only') {
         mobileBox = {
           x: Math.round(width * 0.35),
           y: Math.round(height * 0.08),
           w: Math.round(width * 0.3),
           h: Math.round(height * 0.84),
         };
-      } else if (layoutMode === 'picture-in-picture') {
+      } else if (currentLayoutMode === 'picture-in-picture') {
         desktopBox = {
           x: Math.round(width * 0.05),
           y: Math.round(height * 0.08),
@@ -200,17 +222,10 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
 
       // Draw Desktop Container Box
       if (desktopBox.w > 0) {
-        ctx.save();
-        // Frame Drop Shadow
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 30;
-        ctx.shadowOffsetY = 10;
-
         ctx.fillStyle = '#1e293b';
         ctx.beginPath();
         ctx.roundRect(desktopBox.x, desktopBox.y, desktopBox.w, desktopBox.h, 16);
         ctx.fill();
-        ctx.restore();
 
         // Browser Header Bar
         ctx.fillStyle = '#334155';
@@ -240,7 +255,7 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
         ctx.fill();
         ctx.fillStyle = '#94a3b8';
         ctx.font = '11px sans-serif';
-        ctx.fillText(websiteUrl || 'https://autodocrec.dev', desktopBox.x + 80, desktopBox.y + 22);
+        ctx.fillText(currentWebsiteUrl || 'https://autodocrec.dev', desktopBox.x + 80, desktopBox.y + 22);
 
         // Screen Inner Area
         const screenY = desktopBox.y + 36;
@@ -257,24 +272,18 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
         ctx.fillText('Synchronized High-Resolution Studio View', desktopBox.x + 24, screenY + 70);
 
         // Draw Synchronized Cursor on Desktop View
-        const cursorX = desktopBox.x + (cursorPos.xPercent / 100) * desktopBox.w;
-        const cursorY = screenY + (cursorPos.yPercent / 100) * screenH;
+        const cursorX = desktopBox.x + (currentCursorPos.xPercent / 100) * desktopBox.w;
+        const cursorY = screenY + (currentCursorPos.yPercent / 100) * screenH;
 
-        drawCustomCursor(ctx, cursorX, cursorY, cursorConfig, cursorPos.isDown);
+        drawCustomCursor(ctx, cursorX, cursorY, currentCursorConfig, currentCursorPos.isDown);
       }
 
       // Draw Mobile Container Box
       if (mobileBox.w > 0) {
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-        ctx.shadowBlur = 35;
-        ctx.shadowOffsetY = 12;
-
         ctx.fillStyle = '#020617';
         ctx.beginPath();
         ctx.roundRect(mobileBox.x, mobileBox.y, mobileBox.w, mobileBox.h, 32);
         ctx.fill();
-        ctx.restore();
 
         // Mobile Notch
         ctx.fillStyle = '#1e293b';
@@ -294,10 +303,10 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
         ctx.fillText('Mobile View', mobileBox.x + 20, mScreenY + 35);
 
         // Draw Synchronized Cursor on Mobile View
-        const mCursorX = mobileBox.x + 8 + (cursorPos.xPercent / 100) * (mobileBox.w - 16);
-        const mCursorY = mScreenY + (cursorPos.yPercent / 100) * mScreenH;
+        const mCursorX = mobileBox.x + 8 + (currentCursorPos.xPercent / 100) * (mobileBox.w - 16);
+        const mCursorY = mScreenY + (currentCursorPos.yPercent / 100) * mScreenH;
 
-        drawCustomCursor(ctx, mCursorX, mCursorY, cursorConfig, cursorPos.isDown);
+        drawCustomCursor(ctx, mCursorX, mCursorY, currentCursorConfig, currentCursorPos.isDown);
       }
 
       animId = requestAnimationFrame(renderCanvasFrame);
@@ -308,7 +317,7 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
     return () => {
       cancelAnimationFrame(animId);
     };
-  }, [layoutMode, resolution, fps, cursorPos, cursorConfig, websiteUrl, getCanvasDimensions]);
+  }, [resolution, getCanvasDimensions]);
 
   // Helper function to render custom cursor styles on canvas
   const drawCustomCursor = (
