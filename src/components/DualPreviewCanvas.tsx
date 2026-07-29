@@ -867,17 +867,13 @@ const StudioCursor: React.FC<{
       onWheel={handleWheelGlobal}
       className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center p-4 overflow-hidden select-none"
     >
-      {/* Fixed Offscreen High-Res Compositor Canvas (Positioned offscreen so browser compositor renders all 60fps frames) */}
+      {/* Fixed High-Res Compositor Canvas for Studio Screen Recording */}
       <canvas
         ref={hiddenCanvasRef}
+        className="fixed top-0 left-0 pointer-events-none opacity-0 -z-50"
         style={{
-          position: 'fixed',
-          left: -9999,
-          top: -9999,
           width: `${getCanvasDimensions().width}px`,
           height: `${getCanvasDimensions().height}px`,
-          pointerEvents: 'none',
-          zIndex: -100,
         }}
       />
 
@@ -970,23 +966,19 @@ const StudioCursor: React.FC<{
             </div>
 
             {/* Inner Content Area */}
-            <div className="relative flex-1 w-full h-full overflow-hidden bg-slate-950">
+            <div
+              onPointerMove={(e) => handlePointerMove(e, 'desktop')}
+              onPointerDown={(e) => handlePointerDown(e, 'desktop')}
+              onPointerUp={() => handlePointerUp('desktop')}
+              className="relative flex-1 w-full h-full overflow-hidden bg-slate-950"
+            >
               {iframeSrc ? (
-                <div className="relative w-full h-full">
-                  <iframe
-                    src={iframeSrc}
-                    title="PC Viewport Preview"
-                    className="w-full h-full border-0 pointer-events-auto"
-                    sandbox="allow-scripts allow-same-origin allow-forms"
-                  />
-                  {/* Studio Cursor Pointer Capture Overlay */}
-                  <div
-                    onPointerMove={(e) => handlePointerMove(e, 'desktop')}
-                    onPointerDown={(e) => handlePointerDown(e, 'desktop')}
-                    onPointerUp={() => handlePointerUp('desktop')}
-                    className="absolute inset-0 z-20 cursor-none bg-transparent"
-                  />
-                </div>
+                <iframe
+                  src={iframeSrc}
+                  title="PC Viewport Preview"
+                  className="w-full h-full border-0 pointer-events-auto"
+                  sandbox="allow-scripts allow-same-origin allow-forms"
+                />
               ) : (
                 <InteractiveMockup siteId={activeSiteId} isMobile={false} scrollOffset={scrollOffset} />
               )}
@@ -1031,23 +1023,19 @@ const StudioCursor: React.FC<{
             </div>
 
             {/* Inner Mobile Screen */}
-            <div className="relative flex-1 w-full h-full overflow-hidden bg-slate-950">
+            <div
+              onPointerMove={(e) => handlePointerMove(e, 'mobile')}
+              onPointerDown={(e) => handlePointerDown(e, 'mobile')}
+              onPointerUp={() => handlePointerUp('mobile')}
+              className="relative flex-1 w-full h-full overflow-hidden bg-slate-950"
+            >
               {iframeSrc ? (
-                <div className="relative w-full h-full">
-                  <iframe
-                    src={iframeSrc}
-                    title="Mobile Viewport Preview"
-                    className="w-full h-full border-0 pointer-events-auto"
-                    sandbox="allow-scripts allow-same-origin allow-forms"
-                  />
-                  {/* Studio Cursor Pointer Capture Overlay */}
-                  <div
-                    onPointerMove={(e) => handlePointerMove(e, 'mobile')}
-                    onPointerDown={(e) => handlePointerDown(e, 'mobile')}
-                    onPointerUp={() => handlePointerUp('mobile')}
-                    className="absolute inset-0 z-20 cursor-none bg-transparent"
-                  />
-                </div>
+                <iframe
+                  src={iframeSrc}
+                  title="Mobile Viewport Preview"
+                  className="w-full h-full border-0 pointer-events-auto"
+                  sandbox="allow-scripts allow-same-origin allow-forms"
+                />
               ) : (
                 <InteractiveMockup siteId={activeSiteId} isMobile={true} scrollOffset={scrollOffset} />
               )}

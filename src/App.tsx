@@ -19,7 +19,6 @@ import { AutomationTourPanel } from './components/AutomationTourPanel';
 import { CursorSettingsModal } from './components/CursorSettingsModal';
 import { VideoPlaybackModal } from './components/VideoPlaybackModal';
 import { CrashRecoveryModal } from './components/CrashRecoveryModal';
-import { HotkeyModal } from './components/HotkeyModal';
 
 import { AudioMixer } from './utils/audioMixer';
 import {
@@ -87,7 +86,6 @@ export default function App() {
   const [isCursorModalOpen, setIsCursorModalOpen] = useState(false);
   const [isPlaybackModalOpen, setIsPlaybackModalOpen] = useState(false);
   const [isRecoveryModalOpen, setIsRecoveryModalOpen] = useState(false);
-  const [isHotkeyModalOpen, setIsHotkeyModalOpen] = useState(false);
 
   // Refs for Recording MediaRecorder and Canvas Stream
   const canvasStreamRef = useRef<MediaStream | null>(null);
@@ -184,16 +182,35 @@ export default function App() {
       compositeStream.addTrack(audioTrack);
     }
 
-    // 3. Choose high quality MIME Type
-    let mimeType = 'video/webm;codecs=vp9,opus';
-    if (!MediaRecorder.isTypeSupported(mimeType)) {
-      mimeType = 'video/webm';
+    // 3. Choose robust MIME Type matching stream audio presence
+    const hasAudio = !!audioTrack;
+    const audioCodecs = hasAudio ? ',opus' : '';
+    const candidateTypes = [
+      `video/webm;codecs=vp9${audioCodecs}`,
+      `video/webm;codecs=vp8${audioCodecs}`,
+      `video/webm;codecs=h264${audioCodecs}`,
+      'video/webm',
+      'video/mp4',
+    ];
+
+    let mimeType = '';
+    for (const type of candidateTypes) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        mimeType = type;
+        break;
+      }
     }
 
-    const recorder = new MediaRecorder(compositeStream, {
-      mimeType,
-      videoBitsPerSecond: resolution === '4k' ? 25000000 : resolution === '1440p' ? 12000000 : 8000000,
-    });
+    let recorder: MediaRecorder;
+    try {
+      recorder = new MediaRecorder(compositeStream, {
+        mimeType: mimeType || undefined,
+        videoBitsPerSecond: resolution === '4k' ? 18000000 : resolution === '1440p' ? 10000000 : 6000000,
+      });
+    } catch (e) {
+      console.warn('Failed to construct MediaRecorder with options, trying default:', e);
+      recorder = new MediaRecorder(compositeStream);
+    }
 
     mediaRecorderRef.current = recorder;
 
@@ -371,27 +388,6 @@ export default function App() {
     setUnrecoveredList((prev) => prev.filter((item) => item.metadata.id !== recId));
   };
 
-  // Global Keyboard Shortcuts Listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.altKey && e.key.toLowerCase() === 'r') {
-        e.preventDefault();
-        if (recordingState === 'idle') handleStartRecording();
-        else if (recordingState === 'recording' || recordingState === 'paused') handleStopRecording();
-      } else if (e.altKey && e.key.toLowerCase() === 'p') {
-        e.preventDefault();
-        if (recordingState === 'recording') handlePauseRecording();
-        else if (recordingState === 'paused') handleResumeRecording();
-      } else if (e.altKey && e.key.toLowerCase() === 'm') {
-        e.preventDefault();
-        setAudioConfig((prev) => ({ ...prev, micEnabled: !prev.micEnabled }));
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [recordingState]);
-
   return (
     <div className="w-screen h-screen bg-slate-950 flex flex-col font-sans overflow-hidden select-none">
       {/* Top Header */}
@@ -401,7 +397,6 @@ export default function App() {
         fps={fps}
         hasUnrecoveredRecordings={unrecoveredList.length > 0}
         onOpenRecoveryModal={() => setIsRecoveryModalOpen(true)}
-        onOpenHotkeyModal={() => setIsHotkeyModalOpen(true)}
       />
 
       {/* Main Studio Toolbar */}
@@ -507,11 +502,6 @@ export default function App() {
         unrecoveredList={unrecoveredList}
         onRecoverRecording={handleRecoverRecording}
         onClearRecording={handleClearRecording}
-      />
-
-      <HotkeyModal
-        isOpen={isHotkeyModalOpen}
-        onClose={() => setIsHotkeyModalOpen(false)}
       />
     </div>
   );

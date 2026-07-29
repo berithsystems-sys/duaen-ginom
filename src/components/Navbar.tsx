@@ -8,7 +8,6 @@ interface NavbarProps {
   fps: number;
   hasUnrecoveredRecordings: boolean;
   onOpenRecoveryModal: () => void;
-  onOpenHotkeyModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,7 +16,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   fps,
   hasUnrecoveredRecordings,
   onOpenRecoveryModal,
-  onOpenHotkeyModal,
 }) => {
   return (
     <header className="bg-slate-900 border-b border-slate-800/80 px-4 py-2.5 flex items-center justify-between text-slate-100 sticky top-0 z-50">
@@ -78,15 +76,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Action Buttons & Utilities */}
       <div className="flex items-center space-x-2">
-        <button
-          onClick={onOpenHotkeyModal}
-          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-colors"
-          title="Keyboard Hotkey Shortcuts"
-        >
-          <Cpu className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="hidden sm:inline">Shortcuts</span>
-        </button>
-
         <div className="flex items-center space-x-1 pl-2 border-l border-slate-800">
           <span className="flex items-center text-[11px] text-emerald-400 font-medium px-2 py-1 bg-emerald-500/10 rounded-md border border-emerald-500/20">
             <ShieldCheck className="w-3 h-3 mr-1" />
