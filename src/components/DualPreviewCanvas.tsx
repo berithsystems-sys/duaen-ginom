@@ -6,6 +6,10 @@ import {
   RefreshCw,
   ExternalLink,
   Sparkles,
+  Move,
+  GripHorizontal,
+  RotateCcw,
+  Sliders,
 } from 'lucide-react';
 import {
   LayoutMode,
@@ -44,9 +48,58 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
   const mobileFrameRef = useRef<HTMLDivElement>(null);
   const hiddenCanvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Sizing & Positioning States
+  const [pcScale, setPcScale] = useState<number>(1.0);
+  const [mobileScale, setMobileScale] = useState<number>(1.0);
+  const [pcPos, setPcPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [mobilePos, setMobilePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [scrollOffset, setScrollOffset] = useState<number>(0);
+  const [showSizeBar, setShowSizeBar] = useState<boolean>(true);
+
+  // Dragging states
+  const [activeDrag, setActiveDrag] = useState<'pc' | 'mobile' | null>(null);
+  const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
   const [clicks, setClicks] = useState<
     { x: number; y: number; viewport: 'desktop' | 'mobile'; id: number }[]
   >([]);
+
+  // Drag Start Handler for PC/Mobile Frame Drag Handles
+  const handleDragStart = (e: React.PointerEvent, target: 'pc' | 'mobile') => {
+    e.stopPropagation();
+    e.preventDefault();
+    setActiveDrag(target);
+    setDragStartPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handlePointerMoveGlobal = (e: React.PointerEvent) => {
+    if (activeDrag) {
+      const dx = e.clientX - dragStartPos.x;
+      const dy = e.clientY - dragStartPos.y;
+      setDragStartPos({ x: e.clientX, y: e.clientY });
+      if (activeDrag === 'pc') {
+        setPcPos((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+      } else if (activeDrag === 'mobile') {
+        setMobilePos((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+      }
+    }
+  };
+
+  const handlePointerUpGlobal = () => {
+    setActiveDrag(null);
+  };
+
+  const handleWheelGlobal = (e: React.WheelEvent) => {
+    setScrollOffset((prev) => Math.max(0, Math.min(2500, prev + e.deltaY * 0.8)));
+  };
+
+  const handleResetLayout = () => {
+    setPcScale(1.0);
+    setMobileScale(1.0);
+    setPcPos({ x: 0, y: 0 });
+    setMobilePos({ x: 0, y: 0 });
+    setScrollOffset(0);
+  };
 
   // Calculate resolution dimensions for canvas recording stream
   const getCanvasDimensions = useCallback(() => {
@@ -722,12 +775,65 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
   const iframeSrc = getIframeSrc(websiteUrl);
 
   return (
-    <div className="relative w-full h-full bg-slate-950 flex items-center justify-center p-4 overflow-hidden select-none">
+    <div
+      onPointerMove={handlePointerMoveGlobal}
+      onPointerUp={handlePointerUpGlobal}
+      onWheel={handleWheelGlobal}
+      className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center p-4 overflow-hidden select-none"
+    >
       {/* Hidden Offscreen High-Res Compositor Canvas */}
       <canvas ref={hiddenCanvasRef} className="hidden" />
 
+      {/* Floating Canvas Size & Drag Control Panel */}
+      <div className="absolute top-4 z-40 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2.5 shadow-2xl flex flex-wrap items-center gap-4 text-xs text-slate-200 animate-in fade-in slide-in-from-top-2">
+        <div className="flex items-center space-x-2 font-bold text-indigo-400">
+          <Sliders className="w-4 h-4" />
+          <span>Canvas Studio Controls</span>
+        </div>
+
+        {/* PC Frame Scale Slider */}
+        <div className="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+          <Monitor className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="text-[11px] font-semibold text-slate-300">PC Size: {Math.round(pcScale * 100)}%</span>
+          <input
+            type="range"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+            value={pcScale}
+            onChange={(e) => setPcScale(parseFloat(e.target.value))}
+            className="w-20 accent-indigo-500 cursor-pointer"
+          />
+        </div>
+
+        {/* Mobile Frame Scale Slider */}
+        <div className="flex items-center space-x-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+          <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="text-[11px] font-semibold text-slate-300">Mobile Size: {Math.round(mobileScale * 100)}%</span>
+          <input
+            type="range"
+            min="0.5"
+            max="1.5"
+            step="0.05"
+            value={mobileScale}
+            onChange={(e) => setMobileScale(parseFloat(e.target.value))}
+            className="w-20 accent-indigo-500 cursor-pointer"
+          />
+        </div>
+
+        {/* Reset Layout & Position Button */}
+        <button
+          onClick={handleResetLayout}
+          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-xl font-medium flex items-center space-x-1.5 transition-colors"
+          title="Reset both PC and Mobile size, position, and scroll"
+        >
+          <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-[11px]">Reset Layout</span>
+        </button>
+      </div>
+
       {/* Visible Interactive Desktop + Mobile Preview Frames */}
-      <div className="w-full h-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-center gap-6">
+      <div className="w-full h-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-center gap-6 pt-12">
         {/* DESKTOP VIEWPORT FRAME */}
         {(layoutMode === 'side-by-side' || layoutMode === 'desktop-only' || layoutMode === 'picture-in-picture') && (
           <div
@@ -735,22 +841,29 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
             onPointerMove={(e) => handlePointerMove(e, 'desktop')}
             onPointerDown={(e) => handlePointerDown(e, 'desktop')}
             onPointerUp={() => handlePointerUp('desktop')}
-            className={`relative bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden transition-all flex flex-col ${
-              layoutMode === 'side-by-side' ? 'flex-1 h-[82vh]' : layoutMode === 'desktop-only' ? 'w-full h-[84vh]' : 'w-full h-[84vh]'
+            style={{
+              transform: `translate(${pcPos.x}px, ${pcPos.y}px) scale(${pcScale})`,
+              transformOrigin: 'center center',
+            }}
+            className={`relative bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden transition-transform flex flex-col ${
+              layoutMode === 'side-by-side' ? 'flex-1 h-[78vh]' : layoutMode === 'desktop-only' ? 'w-full h-[82vh]' : 'w-full h-[82vh]'
             }`}
           >
-            {/* Mock MacBook / Browser Top Header */}
-            <div className="bg-slate-800/90 border-b border-slate-700/80 px-4 py-2 flex items-center justify-between z-10">
+            {/* Mock MacBook / Drag Handle Bar */}
+            <div className="bg-slate-800/90 border-b border-slate-700/80 px-4 py-2 flex items-center justify-between z-10 cursor-grab active:cursor-grabbing">
               <div className="flex items-center space-x-2">
                 <span className="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
                 <span className="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
                 <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
               </div>
 
-              {/* URL Address Bar */}
-              <div className="flex-1 max-w-md mx-4 bg-slate-950/80 border border-slate-700/60 rounded-lg px-3 py-1 flex items-center justify-between text-xs text-slate-400 font-mono">
-                <span className="truncate">{websiteUrl || 'https://autodocrec.dev/preview'}</span>
-                <Globe className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0 ml-2" />
+              {/* Drag Handle */}
+              <div
+                onPointerDown={(e) => handleDragStart(e, 'pc')}
+                className="flex items-center space-x-1 bg-slate-950/80 hover:bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-1 text-xs text-slate-300 font-medium cursor-grab active:cursor-grabbing"
+              >
+                <GripHorizontal className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="truncate max-w-[200px]">{websiteUrl || 'PC Viewport (Drag to Move)'}</span>
               </div>
 
               <div className="flex items-center space-x-2 text-xs text-slate-400">
@@ -769,29 +882,27 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
                   sandbox="allow-scripts allow-same-origin allow-forms"
                 />
               ) : (
-                <InteractiveMockup siteId={activeSiteId} isMobile={false} />
+                <InteractiveMockup siteId={activeSiteId} isMobile={false} scrollOffset={scrollOffset} />
               )}
 
-              {/* Visible Custom Overlay Cursor on Desktop Frame */}
-              {cursorPos.activeViewport === 'desktop' && (
-                <div
-                  style={{
-                    left: `${cursorPos.xPercent}%`,
-                    top: `${cursorPos.yPercent}%`,
-                  }}
-                  className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 z-30 transition-transform duration-75"
-                >
-                  {cursorConfig.style === 'laser-pointer' ? (
-                    <div className="w-5 h-5 rounded-full bg-red-500 ring-4 ring-red-400/40 shadow-lg shadow-red-500/50 animate-pulse"></div>
-                  ) : cursorConfig.style === 'glowing-halo' ? (
-                    <div className="w-8 h-8 rounded-full bg-indigo-500/40 ring-2 ring-indigo-400 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-white"></div>
-                    </div>
-                  ) : (
-                    <div className="w-4 h-4 rounded-full bg-rose-500 ring-2 ring-white shadow-xl"></div>
-                  )}
-                </div>
-              )}
+              {/* Synchronized Custom Overlay Cursor on Desktop Frame */}
+              <div
+                style={{
+                  left: `${cursorPos.xPercent}%`,
+                  top: `${cursorPos.yPercent}%`,
+                }}
+                className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 z-30 transition-transform duration-75"
+              >
+                {cursorConfig.style === 'laser-pointer' ? (
+                  <div className="w-5 h-5 rounded-full bg-red-500 ring-4 ring-red-400/40 shadow-lg shadow-red-500/50 animate-pulse"></div>
+                ) : cursorConfig.style === 'glowing-halo' ? (
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/40 ring-2 ring-indigo-400 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  </div>
+                ) : (
+                  <div className="w-4 h-4 rounded-full bg-rose-500 ring-2 ring-white shadow-xl"></div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -803,18 +914,29 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
             onPointerMove={(e) => handlePointerMove(e, 'mobile')}
             onPointerDown={(e) => handlePointerDown(e, 'mobile')}
             onPointerUp={() => handlePointerUp('mobile')}
-            className={`relative bg-slate-950 rounded-[38px] border-[10px] border-slate-900 shadow-2xl overflow-hidden transition-all flex flex-col ${
+            style={{
+              transform: `translate(${mobilePos.x}px, ${mobilePos.y}px) scale(${mobileScale})`,
+              transformOrigin: 'center center',
+            }}
+            className={`relative bg-slate-950 rounded-[38px] border-[10px] border-slate-900 shadow-2xl overflow-hidden transition-transform flex flex-col ${
               layoutMode === 'side-by-side'
-                ? 'w-[320px] md:w-[360px] h-[82vh]'
+                ? 'w-[320px] md:w-[360px] h-[78vh]'
                 : layoutMode === 'mobile-only'
-                ? 'w-[360px] h-[84vh]'
+                ? 'w-[360px] h-[82vh]'
                 : 'absolute bottom-8 right-8 w-[280px] h-[480px] z-30 ring-4 ring-indigo-500/30'
             }`}
           >
-            {/* Dynamic Island Notch */}
-            <div className="bg-slate-900 h-7 w-full flex items-center justify-center z-10">
-              <div className="w-20 h-4 bg-slate-950 rounded-full flex items-center justify-end px-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            {/* Dynamic Island Notch & Drag Handle */}
+            <div
+              onPointerDown={(e) => handleDragStart(e, 'mobile')}
+              className="bg-slate-900 h-8 w-full flex items-center justify-between px-4 z-10 cursor-grab active:cursor-grabbing border-b border-slate-800"
+            >
+              <div className="w-16 h-3.5 bg-slate-950 rounded-full flex items-center justify-end px-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              </div>
+              <div className="text-[10px] font-bold text-slate-400 flex items-center space-x-1">
+                <GripHorizontal className="w-3 h-3 text-indigo-400" />
+                <span>Mobile (Drag)</span>
               </div>
             </div>
 
@@ -828,7 +950,7 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
                   sandbox="allow-scripts allow-same-origin allow-forms"
                 />
               ) : (
-                <InteractiveMockup siteId={activeSiteId} isMobile={true} />
+                <InteractiveMockup siteId={activeSiteId} isMobile={true} scrollOffset={scrollOffset} />
               )}
 
               {/* Synchronized Cursor Indicator on Mobile Screen */}

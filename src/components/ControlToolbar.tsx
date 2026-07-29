@@ -27,7 +27,6 @@ import {
   AudioConfig,
   CaptureSource,
 } from '../types';
-import { SAMPLE_WEBSITES } from '../data/sampleWebsites';
 
 interface ControlToolbarProps {
   recordingState: RecordingState;
@@ -102,8 +101,6 @@ export const ControlToolbar: React.FC<ControlToolbarProps> = ({
   onOpenTourModal,
   onOpenCursorModal,
 }) => {
-  const [showWebsiteMenu, setShowWebsiteMenu] = useState(false);
-
   const isRecording = recordingState === 'recording' || recordingState === 'paused';
 
   return (
@@ -133,45 +130,6 @@ export const ControlToolbar: React.FC<ControlToolbarProps> = ({
           >
             Load
           </button>
-        </div>
-
-        {/* Demo Apps Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setShowWebsiteMenu(!showWebsiteMenu)}
-            disabled={isRecording}
-            className="px-3 py-2 bg-slate-800 hover:bg-slate-700/90 text-slate-200 border border-slate-700/80 rounded-xl text-xs font-medium flex items-center space-x-1.5 transition-colors"
-          >
-            <Layers className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden sm:inline">Demo Apps</span>
-            <ChevronDown className="w-3 h-3 text-slate-400" />
-          </button>
-
-          {showWebsiteMenu && (
-            <div className="absolute top-full left-0 mt-2 w-72 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">
-                Select Test App Preset
-              </div>
-              <div className="space-y-1">
-                {SAMPLE_WEBSITES.map((site) => (
-                  <button
-                    key={site.id}
-                    onClick={() => {
-                      onLoadWebsite(site.url);
-                      setShowWebsiteMenu(false);
-                    }}
-                    className="w-full text-left p-2 rounded-lg hover:bg-slate-700/80 text-xs transition-colors flex items-start space-x-2"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-indigo-400 mt-1 flex-shrink-0"></div>
-                    <div>
-                      <div className="font-semibold text-slate-200">{site.name}</div>
-                      <div className="text-[10px] text-slate-400 line-clamp-1">{site.description}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* CORS Proxy Toggle */}

@@ -23,14 +23,22 @@ interface InteractiveMockupProps {
   siteId: string;
   isMobile?: boolean;
   onUserInteraction?: (action: string) => void;
+  scrollOffset?: number;
 }
 
-export const InteractiveMockup: React.FC<InteractiveMockupProps> = ({ siteId, isMobile = false, onUserInteraction }) => {
+export const InteractiveMockup: React.FC<InteractiveMockupProps> = ({ siteId, isMobile = false, onUserInteraction, scrollOffset = 0 }) => {
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [cartCount, setCartCount] = useState(2);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = scrollOffset;
+    }
+  }, [scrollOffset]);
 
   const triggerAction = (label: string) => {
     setNotification(label);
@@ -41,7 +49,7 @@ export const InteractiveMockup: React.FC<InteractiveMockupProps> = ({ siteId, is
   // Render SaaS Dashboard Mockup
   if (siteId === 'saas-dashboard' || siteId.includes('saas')) {
     return (
-      <div className={`w-full h-full bg-slate-900 text-slate-100 flex flex-col font-sans select-none overflow-y-auto ${isMobile ? 'text-xs' : 'text-sm'}`}>
+      <div ref={containerRef} className={`w-full h-full bg-slate-900 text-slate-100 flex flex-col font-sans select-none overflow-y-auto ${isMobile ? 'text-xs' : 'text-sm'}`}>
         {/* Header */}
         <div className="bg-slate-800/90 backdrop-blur border-b border-slate-700/60 px-4 py-2.5 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center space-x-3">

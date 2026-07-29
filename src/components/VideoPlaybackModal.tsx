@@ -48,6 +48,7 @@ export const VideoPlaybackModal: React.FC<VideoPlaybackModalProps> = ({
         format: selectedFormat,
         resolution,
         fps,
+        durationSeconds: durationMs / 1000,
       });
       setExportSuccess(true);
       setTimeout(() => setExportSuccess(false), 3000);

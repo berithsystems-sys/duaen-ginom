@@ -1,4 +1,5 @@
 import { VideoFormat } from '../types';
+import { fixWebmDuration } from './fixWebmDuration';
 
 /**
  * Custom local Video Exporter:
@@ -12,6 +13,7 @@ export interface ExportVideoOptions {
   filename?: string;
   resolution?: string;
   fps?: number;
+  durationSeconds?: number;
 }
 
 export function getMimeTypeForFormat(format: VideoFormat): string {
@@ -28,16 +30,21 @@ export function getMimeTypeForFormat(format: VideoFormat): string {
   }
 }
 
-export async function exportVideoFile({ blob, format, filename, resolution, fps }: ExportVideoOptions): Promise<void> {
+export async function exportVideoFile({ blob, format, filename, resolution, fps, durationSeconds }: ExportVideoOptions): Promise<void> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const defaultName = filename || `DuaEn_Studio_${resolution || '1080p'}_${fps || 60}fps_${timestamp}.${format}`;
 
   let finalBlob = blob;
 
+  // Apply WebM Duration Header fix if duration is provided
+  if (durationSeconds && durationSeconds > 0) {
+    finalBlob = await fixWebmDuration(blob, durationSeconds * 1000);
+  }
+
   // Convert Blob type header to target container type for OS player compatibility
   const targetMime = getMimeTypeForFormat(format);
-  if (blob.type !== targetMime) {
-    finalBlob = new Blob([blob], { type: targetMime });
+  if (finalBlob.type !== targetMime) {
+    finalBlob = new Blob([finalBlob], { type: targetMime });
   }
 
   // Check if modern File System Access API is available (supports direct local save dialog)
