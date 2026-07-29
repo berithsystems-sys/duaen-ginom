@@ -763,7 +763,94 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
     ctx.restore();
   };
 
-  // Determine iframe source URL
+  // Custom SVG Studio Cursor Component for PC and Mobile Synchronized Rendering
+const StudioCursor: React.FC<{
+  cursorConfig: CursorConfig;
+  cursorPos: CursorPosition;
+}> = ({ cursorConfig, cursorPos }) => {
+  const { style, color = '#6366f1', size = 20, showRipple = true } = cursorConfig;
+
+  return (
+    <div
+      style={{
+        left: `${cursorPos.xPercent}%`,
+        top: `${cursorPos.yPercent}%`,
+      }}
+      className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 z-50 transition-transform duration-75"
+    >
+      {/* Click Ripple Indicator */}
+      {cursorPos.isDown && showRipple && (
+        <div
+          style={{ borderColor: color }}
+          className="absolute -inset-4 rounded-full border-2 animate-ping opacity-80 pointer-events-none"
+        />
+      )}
+
+      {/* Styled Cursors */}
+      {style === 'laser-pointer' ? (
+        <div
+          style={{ width: `${size}px`, height: `${size}px` }}
+          className="rounded-full bg-rose-500 ring-4 ring-rose-400/50 shadow-lg shadow-rose-500/60 animate-pulse"
+        />
+      ) : style === 'glowing-halo' ? (
+        <div
+          style={{
+            width: `${size * 1.8}px`,
+            height: `${size * 1.8}px`,
+            borderColor: color,
+          }}
+          className="rounded-full border-2 bg-indigo-500/30 backdrop-blur-sm flex items-center justify-center shadow-lg"
+        >
+          <div style={{ backgroundColor: color }} className="w-2.5 h-2.5 rounded-full" />
+        </div>
+      ) : style === 'hand-pointer' ? (
+        <div className="filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]">
+          <svg
+            width={size * 1.2}
+            height={size * 1.2}
+            viewBox="0 0 24 24"
+            fill={color}
+            stroke="#ffffff"
+            strokeWidth="1.5"
+          >
+            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+            <path d="M18 11a2 2 0 0 1 2 2v2a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.83l1.8 1.8" />
+          </svg>
+        </div>
+      ) : style === 'crosshair' ? (
+        <div className="relative flex items-center justify-center">
+          <div style={{ borderColor: color }} className="w-7 h-7 border-2 rounded-full border-dashed animate-spin" />
+          <div style={{ backgroundColor: color }} className="absolute w-2 h-2 rounded-full" />
+        </div>
+      ) : style === 'spotlight' ? (
+        <div
+          style={{
+            width: `${size * 2.5}px`,
+            height: `${size * 2.5}px`,
+            boxShadow: `0 0 30px 10px ${color}`,
+          }}
+          className="rounded-full border-2 border-white/80 bg-white/10 backdrop-blur-xs flex items-center justify-center"
+        >
+          <div style={{ backgroundColor: color }} className="w-2 h-2 rounded-full" />
+        </div>
+      ) : (
+        /* macOS Default Sleek Arrow */
+        <div className="filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.7)]">
+          <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill={color}
+            stroke="#ffffff"
+            strokeWidth="2"
+          >
+            <path d="M3 3l7 18 3-7 7-3L3 3z" />
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+};
   const getIframeSrc = (url: string) => {
     if (!url || url.startsWith('demo://')) return null;
     if (useProxy) {
@@ -781,8 +868,19 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
       onWheel={handleWheelGlobal}
       className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center p-4 overflow-hidden select-none"
     >
-      {/* Hidden Offscreen High-Res Compositor Canvas */}
-      <canvas ref={hiddenCanvasRef} className="hidden" />
+      {/* Fixed Offscreen High-Res Compositor Canvas (Positioned offscreen so browser compositor renders all 60fps frames) */}
+      <canvas
+        ref={hiddenCanvasRef}
+        style={{
+          position: 'fixed',
+          left: -9999,
+          top: -9999,
+          width: `${getCanvasDimensions().width}px`,
+          height: `${getCanvasDimensions().height}px`,
+          pointerEvents: 'none',
+          zIndex: -100,
+        }}
+      />
 
       {/* Floating Canvas Size & Drag Control Panel */}
       <div className="absolute top-4 z-40 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-2xl p-2.5 shadow-2xl flex flex-wrap items-center gap-4 text-xs text-slate-200 animate-in fade-in slide-in-from-top-2">
@@ -886,23 +984,7 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
               )}
 
               {/* Synchronized Custom Overlay Cursor on Desktop Frame */}
-              <div
-                style={{
-                  left: `${cursorPos.xPercent}%`,
-                  top: `${cursorPos.yPercent}%`,
-                }}
-                className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 z-30 transition-transform duration-75"
-              >
-                {cursorConfig.style === 'laser-pointer' ? (
-                  <div className="w-5 h-5 rounded-full bg-red-500 ring-4 ring-red-400/40 shadow-lg shadow-red-500/50 animate-pulse"></div>
-                ) : cursorConfig.style === 'glowing-halo' ? (
-                  <div className="w-8 h-8 rounded-full bg-indigo-500/40 ring-2 ring-indigo-400 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-white"></div>
-                  </div>
-                ) : (
-                  <div className="w-4 h-4 rounded-full bg-rose-500 ring-2 ring-white shadow-xl"></div>
-                )}
-              </div>
+              <StudioCursor cursorConfig={cursorConfig} cursorPos={cursorPos} />
             </div>
           </div>
         )}
@@ -953,16 +1035,8 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
                 <InteractiveMockup siteId={activeSiteId} isMobile={true} scrollOffset={scrollOffset} />
               )}
 
-              {/* Synchronized Cursor Indicator on Mobile Screen */}
-              <div
-                style={{
-                  left: `${cursorPos.xPercent}%`,
-                  top: `${cursorPos.yPercent}%`,
-                }}
-                className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-1/2 z-30 transition-transform duration-75"
-              >
-                <div className="w-4 h-4 rounded-full bg-indigo-500 ring-2 ring-white shadow-xl animate-ping"></div>
-              </div>
+              {/* Synchronized Custom Overlay Cursor on Mobile Screen */}
+              <StudioCursor cursorConfig={cursorConfig} cursorPos={cursorPos} />
             </div>
 
             {/* Mobile Bottom Home Bar */}

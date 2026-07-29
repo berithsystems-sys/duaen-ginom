@@ -29,10 +29,12 @@ import {
   clearRecordingFromDB,
 } from './utils/indexedDB';
 
+import { fixWebmDuration } from './utils/fixWebmDuration';
+
 export default function App() {
   // Website & Proxy State
-  const [websiteUrl, setWebsiteUrl] = useState('demo://saas-dashboard');
-  const [activeSiteId, setActiveSiteId] = useState('saas-dashboard');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [activeSiteId, setActiveSiteId] = useState('app');
   const [useProxy, setUseProxy] = useState(false);
 
   // Recording Studio Configuration
@@ -94,6 +96,7 @@ export default function App() {
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingIdRef = useRef<string>('');
   const recordingTimerRef = useRef<any>(null);
+  const durationSecondsRef = useRef<number>(0);
 
   // Query Microphones on Mount
   useEffect(() => {
@@ -212,9 +215,11 @@ export default function App() {
       }
     };
 
-    recorder.onstop = () => {
+    recorder.onstop = async () => {
       const fullBlob = new Blob(recordedChunksRef.current, { type: mimeType });
-      setRecordedBlob(fullBlob);
+      const finalDurationMs = (durationSecondsRef.current || 1) * 1000;
+      const patchedBlob = await fixWebmDuration(fullBlob, finalDurationMs);
+      setRecordedBlob(patchedBlob);
       setIsPlaybackModalOpen(true);
       setRecordingState('completed');
 
@@ -244,10 +249,15 @@ export default function App() {
     recorder.start(1000); // 1s slice chunks
     setRecordingState('recording');
     setDurationSeconds(0);
+    durationSecondsRef.current = 0;
 
     // Start Timer
     recordingTimerRef.current = setInterval(() => {
-      setDurationSeconds((prev) => prev + 1);
+      setDurationSeconds((prev) => {
+        const next = prev + 1;
+        durationSecondsRef.current = next;
+        return next;
+      });
     }, 1000);
   };
 
