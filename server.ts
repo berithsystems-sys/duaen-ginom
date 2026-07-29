@@ -119,12 +119,13 @@ async function startServer() {
     });
   }
 
-  if (typeof PORT === "string" && (PORT.startsWith("/") || PORT.startsWith("\\"))) {
-    app.listen(PORT, () => {
-      console.log(`AutoDoc Rec Studio Server listening on Unix socket ${PORT}`);
+  const rawPort = process.env.PORT || 3000;
+  if (typeof rawPort === "string" && isNaN(Number(rawPort))) {
+    app.listen(rawPort, () => {
+      console.log(`AutoDoc Rec Studio Server listening on Unix socket / pipe ${rawPort}`);
     });
   } else {
-    const numericPort = Number(PORT) || 3000;
+    const numericPort = Number(rawPort) || 3000;
     app.listen(numericPort, "0.0.0.0", () => {
       console.log(`AutoDoc Rec Studio Server running on http://0.0.0.0:${numericPort}`);
     });
