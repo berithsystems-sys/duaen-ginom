@@ -102,8 +102,11 @@ export const ControlToolbar: React.FC<ControlToolbarProps> = ({
   return (
     <div className="bg-slate-900/95 border-b border-slate-800 p-3 text-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 shadow-xl z-40">
       {/* 1. Website URL Input & Presets */}
-      <div className="flex items-center space-x-2 flex-1 min-w-[300px]">
-        <div className="relative flex-1 flex items-center bg-slate-950 border border-slate-700/80 rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500/50">
+      <div className="flex items-center space-x-2 flex-1 min-w-[320px]">
+        <div className="relative flex-1 flex items-center bg-slate-950 border border-indigo-500/40 rounded-xl px-3 py-1.5 focus-within:ring-2 focus-within:ring-indigo-500/70 shadow-inner">
+          <span className="hidden sm:inline-flex items-center text-[10px] font-bold text-indigo-300 uppercase tracking-wider bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/30 mr-2 flex-shrink-0">
+            Target URL
+          </span>
           <Globe className="w-4 h-4 text-indigo-400 mr-2 flex-shrink-0" />
           <input
             type="text"
@@ -113,12 +116,12 @@ export const ControlToolbar: React.FC<ControlToolbarProps> = ({
               if (e.key === 'Enter') onLoadWebsite(websiteUrl);
             }}
             placeholder="Enter App URL (e.g. http://localhost:3000 or https://example.com)..."
-            className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-500 focus:outline-none"
+            className="w-full bg-transparent text-xs text-slate-100 placeholder-slate-400 font-medium focus:outline-none"
             disabled={isRecording}
           />
           <button
             onClick={() => onLoadWebsite(websiteUrl)}
-            className="ml-2 text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg border border-slate-700/80 transition-colors"
+            className="ml-2 text-[11px] font-bold bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg shadow-sm transition-colors"
             disabled={isRecording}
           >
             Load
