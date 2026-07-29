@@ -33,9 +33,9 @@ import { fixWebmDuration } from './utils/fixWebmDuration';
 
 export default function App() {
   // Website & Proxy State
-  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('https://www.google.com');
   const [activeSiteId, setActiveSiteId] = useState('app');
-  const [useProxy, setUseProxy] = useState(false);
+  const [useProxy, setUseProxy] = useState(true);
 
   // Recording Studio Configuration
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');

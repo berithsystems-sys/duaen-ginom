@@ -177,30 +177,29 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
   useEffect(() => { websiteUrlRef.current = websiteUrl; }, [websiteUrl]);
   useEffect(() => { activeSiteIdRef.current = activeSiteId; }, [activeSiteId]);
 
-  // Initialize stream ONLY when canvas mounts or resolution/fps changes
-  useEffect(() => {
-    const canvas = hiddenCanvasRef.current;
-    if (!canvas || !onCanvasStreamReady) return;
-    try {
-      const stream = canvas.captureStream(fps);
-      onCanvasStreamReady(stream);
-    } catch (e) {
-      console.warn('captureStream failed:', e);
-    }
-  }, [fps, resolution, onCanvasStreamReady]);
-
-  // Continuous Offscreen High-Res Canvas Compositor loop (Optimized, lightweight 60fps)
+  // Single combined effect for canvas size, captureStream initialization and 60fps render loop
   useEffect(() => {
     const canvas = hiddenCanvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d', { alpha: false });
-    if (!ctx) return;
-
-    let animId: number;
+    // Set canvas resolution dimensions once before capturing stream
     const { width, height } = getCanvasDimensions();
     canvas.width = width;
     canvas.height = height;
+
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return;
+
+    if (onCanvasStreamReady) {
+      try {
+        const stream = canvas.captureStream(fps);
+        onCanvasStreamReady(stream);
+      } catch (e) {
+        console.warn('captureStream failed:', e);
+      }
+    }
+
+    let animId: number;
 
     const renderCanvasFrame = () => {
       const currentCursorPos = cursorPosRef.current;
@@ -363,7 +362,7 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
     return () => {
       cancelAnimationFrame(animId);
     };
-  }, [resolution, getCanvasDimensions]);
+  }, [fps, resolution, getCanvasDimensions, onCanvasStreamReady]);
 
   // Helper to draw realistic high-resolution desktop application UI onto 2D canvas context
   const drawDesktopAppUI = (
@@ -973,12 +972,21 @@ const StudioCursor: React.FC<{
             {/* Inner Content Area */}
             <div className="relative flex-1 w-full h-full overflow-hidden bg-slate-950">
               {iframeSrc ? (
-                <iframe
-                  src={iframeSrc}
-                  title="PC Viewport Preview"
-                  className="w-full h-full border-0 pointer-events-auto"
-                  sandbox="allow-scripts allow-same-origin allow-forms"
-                />
+                <div className="relative w-full h-full">
+                  <iframe
+                    src={iframeSrc}
+                    title="PC Viewport Preview"
+                    className="w-full h-full border-0 pointer-events-auto"
+                    sandbox="allow-scripts allow-same-origin allow-forms"
+                  />
+                  {/* Studio Cursor Pointer Capture Overlay */}
+                  <div
+                    onPointerMove={(e) => handlePointerMove(e, 'desktop')}
+                    onPointerDown={(e) => handlePointerDown(e, 'desktop')}
+                    onPointerUp={() => handlePointerUp('desktop')}
+                    className="absolute inset-0 z-20 cursor-none bg-transparent"
+                  />
+                </div>
               ) : (
                 <InteractiveMockup siteId={activeSiteId} isMobile={false} scrollOffset={scrollOffset} />
               )}
@@ -1025,12 +1033,21 @@ const StudioCursor: React.FC<{
             {/* Inner Mobile Screen */}
             <div className="relative flex-1 w-full h-full overflow-hidden bg-slate-950">
               {iframeSrc ? (
-                <iframe
-                  src={iframeSrc}
-                  title="Mobile Viewport Preview"
-                  className="w-full h-full border-0 pointer-events-auto"
-                  sandbox="allow-scripts allow-same-origin allow-forms"
-                />
+                <div className="relative w-full h-full">
+                  <iframe
+                    src={iframeSrc}
+                    title="Mobile Viewport Preview"
+                    className="w-full h-full border-0 pointer-events-auto"
+                    sandbox="allow-scripts allow-same-origin allow-forms"
+                  />
+                  {/* Studio Cursor Pointer Capture Overlay */}
+                  <div
+                    onPointerMove={(e) => handlePointerMove(e, 'mobile')}
+                    onPointerDown={(e) => handlePointerDown(e, 'mobile')}
+                    onPointerUp={() => handlePointerUp('mobile')}
+                    className="absolute inset-0 z-20 cursor-none bg-transparent"
+                  />
+                </div>
               ) : (
                 <InteractiveMockup siteId={activeSiteId} isMobile={true} scrollOffset={scrollOffset} />
               )}

@@ -273,7 +273,7 @@ export const InteractiveMockup: React.FC<InteractiveMockupProps> = ({ siteId, is
   // Render E-Commerce Mockup
   if (siteId === 'ecommerce-store') {
     return (
-      <div className={`w-full h-full bg-slate-950 text-slate-100 flex flex-col font-sans select-none overflow-y-auto ${isMobile ? 'text-xs' : 'text-sm'}`}>
+      <div ref={containerRef} className={`w-full h-full bg-slate-950 text-slate-100 flex flex-col font-sans select-none overflow-y-auto ${isMobile ? 'text-xs' : 'text-sm'}`}>
         {/* E-Commerce Header */}
         <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center space-x-2">
@@ -357,7 +357,7 @@ export const InteractiveMockup: React.FC<InteractiveMockupProps> = ({ siteId, is
 
   // Fallback Developer Portal Mockup
   return (
-    <div className={`w-full h-full bg-slate-900 text-slate-100 flex flex-col font-sans select-none overflow-y-auto ${isMobile ? 'text-xs' : 'text-sm'}`}>
+    <div ref={containerRef} className={`w-full h-full bg-slate-900 text-slate-100 flex flex-col font-sans select-none overflow-y-auto ${isMobile ? 'text-xs' : 'text-sm'}`}>
       <div className="bg-slate-800 border-b border-slate-700 p-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Code className="w-5 h-5 text-purple-400" />
