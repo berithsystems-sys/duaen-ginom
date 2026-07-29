@@ -4,7 +4,7 @@ import { createServer as createViteServer } from "vite";
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = process.env.PORT || 3000;
 
   app.use(express.json());
 
@@ -119,9 +119,16 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`AutoDoc Rec Studio Server running on http://0.0.0.0:${PORT}`);
-  });
+  if (typeof PORT === "string" && (PORT.startsWith("/") || PORT.startsWith("\\"))) {
+    app.listen(PORT, () => {
+      console.log(`AutoDoc Rec Studio Server listening on Unix socket ${PORT}`);
+    });
+  } else {
+    const numericPort = Number(PORT) || 3000;
+    app.listen(numericPort, "0.0.0.0", () => {
+      console.log(`AutoDoc Rec Studio Server running on http://0.0.0.0:${numericPort}`);
+    });
+  }
 }
 
 startServer().catch((err) => {
