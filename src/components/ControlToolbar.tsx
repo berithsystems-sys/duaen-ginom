@@ -25,6 +25,7 @@ import {
   LayoutMode,
   ResolutionPreset,
   AudioConfig,
+  CaptureSource,
 } from '../types';
 import { SAMPLE_WEBSITES } from '../data/sampleWebsites';
 
@@ -43,6 +44,9 @@ interface ControlToolbarProps {
 
   layoutMode: LayoutMode;
   onChangeLayoutMode: (mode: LayoutMode) => void;
+
+  captureSource?: CaptureSource;
+  onChangeCaptureSource?: (source: CaptureSource) => void;
 
   resolution: ResolutionPreset;
   onChangeResolution: (res: ResolutionPreset) => void;
@@ -77,6 +81,9 @@ export const ControlToolbar: React.FC<ControlToolbarProps> = ({
 
   layoutMode,
   onChangeLayoutMode,
+
+  captureSource,
+  onChangeCaptureSource,
 
   resolution,
   onChangeResolution,
@@ -182,6 +189,34 @@ export const ControlToolbar: React.FC<ControlToolbarProps> = ({
 
       {/* 2. Studio Layout, Resolution, Audio & Tour Controls */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Recording Source Selection */}
+        {onChangeCaptureSource && (
+          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-indigo-500/30">
+            <button
+              onClick={() => onChangeCaptureSource('duaen-canvas')}
+              className={`p-1.5 rounded-lg text-xs flex items-center space-x-1 transition-all ${
+                captureSource === 'duaen-canvas' ? 'bg-indigo-600 text-white font-semibold shadow' : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="DuaEn Dual Studio Canvas Mode (PC + Mobile UI & synchronized cursor)"
+              disabled={isRecording}
+            >
+              <Video className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline text-[11px]">DuaEn Studio</span>
+            </button>
+            <button
+              onClick={() => onChangeCaptureSource('screen-share')}
+              className={`p-1.5 rounded-lg text-xs flex items-center space-x-1 transition-all ${
+                captureSource === 'screen-share' ? 'bg-indigo-600 text-white font-semibold shadow' : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="Live Browser Tab / Screen Capture Mode"
+              disabled={isRecording}
+            >
+              <Monitor className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline text-[11px]">Live Tab</span>
+            </button>
+          </div>
+        )}
+
         {/* Layout Modes */}
         <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
           <button

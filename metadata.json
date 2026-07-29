@@ -1,6 +1,6 @@
 {
-  "name": "AutoDoc Rec",
-  "description": "Automated and manual dual-view (Desktop + Mobile) video tutorial recorder with cursor tracking, audio capture, crash recovery, and instant local export.",
+  "name": "DuaEn",
+  "description": "DuaEn (Dua Screen) - Automated and manual dual-screen (Desktop + Mobile) video tutorial recorder with synchronized cursor tracking, audio capture, crash recovery, and instant export.",
   "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

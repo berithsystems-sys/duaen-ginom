@@ -1,5 +1,7 @@
 export type RecordingState = 'idle' | 'countdown' | 'recording' | 'paused' | 'completed';
 
+export type CaptureSource = 'duaen-canvas' | 'screen-share';
+
 export type LayoutMode = 'side-by-side' | 'desktop-only' | 'mobile-only' | 'picture-in-picture' | 'split-screen';
 
 export type ResolutionPreset = '1080p' | '1440p' | '4k' | '720p';

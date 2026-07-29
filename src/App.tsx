@@ -9,6 +9,7 @@ import {
   CursorPosition,
   TourPreset,
   RecordingMetadata,
+  CaptureSource,
 } from './types';
 import { Navbar } from './components/Navbar';
 import { ControlToolbar } from './components/ControlToolbar';
@@ -37,6 +38,7 @@ export default function App() {
   // Recording Studio Configuration
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('side-by-side');
+  const [captureSource, setCaptureSource] = useState<CaptureSource>('duaen-canvas');
   const [resolution, setResolution] = useState<ResolutionPreset>('1080p');
   const [fps, setFps] = useState<number>(60);
   const [countdownSeconds, setCountdownSeconds] = useState<number>(3);
@@ -142,7 +144,23 @@ export default function App() {
 
   // START RECORDING FLOW
   const executeStartRecording = async () => {
-    if (!canvasStreamRef.current) return;
+    let activeVideoStream: MediaStream | null = null;
+
+    if (captureSource === 'screen-share') {
+      try {
+        activeVideoStream = await navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: 'browser' },
+          audio: true,
+        });
+      } catch (err) {
+        console.warn('Screen share display media cancelled or failed:', err);
+        activeVideoStream = canvasStreamRef.current;
+      }
+    } else {
+      activeVideoStream = canvasStreamRef.current;
+    }
+
+    if (!activeVideoStream) return;
 
     recordedChunksRef.current = [];
     const currentRecId = `rec_${Date.now()}`;
@@ -153,12 +171,12 @@ export default function App() {
     audioMixerRef.current = audioMixer;
     const audioTrack = await audioMixer.setup(
       audioConfig.micEnabled ? audioConfig.selectedMicDeviceId : 'none',
-      canvasStreamRef.current
+      activeVideoStream
     );
 
-    // 2. Combine Video Canvas Track + Mixed Audio Track
+    // 2. Combine Video Track + Mixed Audio Track
     const compositeStream = new MediaStream();
-    canvasStreamRef.current.getVideoTracks().forEach((vt) => compositeStream.addTrack(vt));
+    activeVideoStream.getVideoTracks().forEach((vt) => compositeStream.addTrack(vt));
     if (audioTrack) {
       compositeStream.addTrack(audioTrack);
     }
@@ -390,6 +408,8 @@ export default function App() {
         onLoadWebsite={handleLoadWebsite}
         layoutMode={layoutMode}
         onChangeLayoutMode={setLayoutMode}
+        captureSource={captureSource}
+        onChangeCaptureSource={setCaptureSource}
         resolution={resolution}
         onChangeResolution={setResolution}
         fps={fps}
@@ -431,6 +451,11 @@ export default function App() {
           activeSiteId={activeSiteId}
         />
       </div>
+
+      {/* Footer */}
+      <footer className="py-2 text-center text-[11px] text-slate-500 bg-slate-950 border-t border-slate-900/80 shrink-0">
+        Powered by: <a href="https://BerithSystems.com" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300 transition-colors font-medium text-slate-400">BerithSystems.com</a>
+      </footer>
 
       {/* Floating Low-CPU Minimal Recording Overlay */}
       <RecordingOverlay

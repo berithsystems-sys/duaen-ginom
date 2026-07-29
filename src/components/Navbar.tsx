@@ -30,12 +30,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
         <div>
           <div className="flex items-center space-x-2">
-            <h1 className="font-bold text-base tracking-tight text-slate-100">AutoDoc Rec</h1>
+            <h1 className="font-bold text-base tracking-tight text-slate-100">DuaEn</h1>
             <span className="text-[10px] uppercase tracking-wider bg-rose-500/10 text-rose-400 font-bold px-1.5 py-0.5 rounded border border-rose-500/20">
-              Dual Studio
+              Dua Screen Studio
             </span>
           </div>
-          <p className="text-[11px] text-slate-400">Automated PC + Mobile Video Tutorial Studio</p>
+          <p className="text-[11px] text-slate-400">DuaEn - Automated PC + Mobile Screen Video Studio</p>
         </div>
       </div>
 

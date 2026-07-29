@@ -116,11 +116,13 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
   const cursorConfigRef = useRef(cursorConfig);
   const layoutModeRef = useRef(layoutMode);
   const websiteUrlRef = useRef(websiteUrl);
+  const activeSiteIdRef = useRef(activeSiteId);
 
   useEffect(() => { cursorPosRef.current = cursorPos; }, [cursorPos]);
   useEffect(() => { cursorConfigRef.current = cursorConfig; }, [cursorConfig]);
   useEffect(() => { layoutModeRef.current = layoutMode; }, [layoutMode]);
   useEffect(() => { websiteUrlRef.current = websiteUrl; }, [websiteUrl]);
+  useEffect(() => { activeSiteIdRef.current = activeSiteId; }, [activeSiteId]);
 
   // Initialize stream ONLY when canvas mounts or resolution/fps changes
   useEffect(() => {
@@ -152,6 +154,8 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
       const currentCursorConfig = cursorConfigRef.current;
       const currentLayoutMode = layoutModeRef.current;
       const currentWebsiteUrl = websiteUrlRef.current;
+      const currentSiteId = activeSiteIdRef.current;
+      const frameTime = Date.now() / 1000;
 
       // 1. Clear background canvas with dark studio fill
       ctx.fillStyle = '#0f172a'; // slate-900
@@ -255,21 +259,14 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
         ctx.fill();
         ctx.fillStyle = '#94a3b8';
         ctx.font = '11px sans-serif';
-        ctx.fillText(currentWebsiteUrl || 'https://autodocrec.dev', desktopBox.x + 80, desktopBox.y + 22);
+        ctx.fillText(currentWebsiteUrl || 'https://duaen.dev/preview', desktopBox.x + 80, desktopBox.y + 22);
 
         // Screen Inner Area
         const screenY = desktopBox.y + 36;
         const screenH = desktopBox.h - 36;
-        ctx.fillStyle = '#090d16';
-        ctx.fillRect(desktopBox.x, screenY, desktopBox.w, screenH);
 
-        // Label Text
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = 'bold 22px sans-serif';
-        ctx.fillText('Desktop PC Viewport', desktopBox.x + 24, screenY + 45);
-        ctx.font = '14px sans-serif';
-        ctx.fillStyle = '#64748b';
-        ctx.fillText('Synchronized High-Resolution Studio View', desktopBox.x + 24, screenY + 70);
+        // Draw Full High-Resolution Interactive Application UI on Canvas
+        drawDesktopAppUI(ctx, desktopBox.x, screenY, desktopBox.w, screenH, currentSiteId, currentWebsiteUrl, frameTime);
 
         // Draw Synchronized Cursor on Desktop View
         const cursorX = desktopBox.x + (currentCursorPos.xPercent / 100) * desktopBox.w;
@@ -294,13 +291,9 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
         // Mobile Inner Screen
         const mScreenY = mobileBox.y + 30;
         const mScreenH = mobileBox.h - 40;
-        ctx.fillStyle = '#0f172a';
-        ctx.fillRect(mobileBox.x + 8, mScreenY, mobileBox.w - 16, mScreenH);
 
-        // Mobile Label
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.fillText('Mobile View', mobileBox.x + 20, mScreenY + 35);
+        // Draw Mobile Responsive Application UI on Canvas
+        drawMobileAppUI(ctx, mobileBox.x + 8, mScreenY, mobileBox.w - 16, mScreenH, currentSiteId, currentWebsiteUrl, frameTime);
 
         // Draw Synchronized Cursor on Mobile View
         const mCursorX = mobileBox.x + 8 + (currentCursorPos.xPercent / 100) * (mobileBox.w - 16);
@@ -318,6 +311,338 @@ export const DualPreviewCanvas: React.FC<DualPreviewCanvasProps> = ({
       cancelAnimationFrame(animId);
     };
   }, [resolution, getCanvasDimensions]);
+
+  // Helper to draw realistic high-resolution desktop application UI onto 2D canvas context
+  const drawDesktopAppUI = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    siteId: string,
+    url: string,
+    time: number
+  ) => {
+    // 1. Dark App Canvas Fill
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x, y, w, h);
+
+    // 2. Top App Navigation Bar
+    const navH = Math.max(34, Math.round(h * 0.08));
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x, y, w, navH);
+
+    // App Logo Badge
+    ctx.fillStyle = '#3b82f6';
+    ctx.beginPath();
+    ctx.roundRect(x + 16, y + (navH - 22) / 2, 22, 22, 6);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('D', x + 23, y + (navH - 22) / 2 + 15);
+
+    // App Title
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 13px sans-serif';
+    const appName = siteId.includes('ecommerce')
+      ? 'Nexus Store'
+      : siteId.includes('docs')
+      ? 'DevPortal API'
+      : siteId.includes('writer')
+      ? 'AI Studio Writer'
+      : 'PulseAnalytics';
+    ctx.fillText(appName, x + 46, y + (navH - 22) / 2 + 16);
+
+    // Search Pill Input
+    const searchW = Math.max(100, Math.round(w * 0.22));
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect(x + 180, y + (navH - 22) / 2, searchW, 22, 6);
+    ctx.fill();
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('🔍 Search analytics...', x + 190, y + (navH - 22) / 2 + 15);
+
+    // Profile Avatar
+    ctx.fillStyle = '#6366f1';
+    ctx.beginPath();
+    ctx.arc(x + w - 20, y + navH / 2, 11, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Notification Dot
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(x + w - 46, y + navH / 2, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. Left Sidebar
+    const sidebarW = Math.max(120, Math.round(w * 0.17));
+    const mainY = y + navH;
+    const mainH = h - navH;
+
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(x, mainY, sidebarW, mainH);
+
+    // Sidebar Menu Items
+    const menuItems = ['📊 Dashboard', '📈 Analytics', '👥 Customers', '💳 Revenue', '⚙️ Settings'];
+    let menuY = mainY + 16;
+    menuItems.forEach((item, idx) => {
+      if (idx === 0) {
+        ctx.fillStyle = '#2563eb';
+        ctx.beginPath();
+        ctx.roundRect(x + 8, menuY, sidebarW - 16, 26, 6);
+        ctx.fill();
+      }
+      ctx.fillStyle = idx === 0 ? '#ffffff' : '#94a3b8';
+      ctx.font = '11px sans-serif';
+      ctx.fillText(item, x + 14, menuY + 17);
+      menuY += 32;
+    });
+
+    // 4. Main Content Dashboard Area
+    const contentX = x + sidebarW + 16;
+    const contentY = mainY + 16;
+    const contentW = w - sidebarW - 32;
+
+    // Stat Cards (4 across)
+    const cardGap = 12;
+    const cardW = Math.max(80, (contentW - cardGap * 3) / 4);
+    const cardH = Math.max(54, Math.round(mainH * 0.22));
+
+    const stats = [
+      { label: 'Total Revenue', val: '$128,450', growth: '+18.4%', color: '#10b981' },
+      { label: 'Active Users', val: '3,842', growth: '+12.3%', color: '#3b82f6' },
+      { label: 'Conversion', val: '4.85%', growth: '+2.1%', color: '#8b5cf6' },
+      { label: 'API Uptime', val: '99.98%', growth: '18ms', color: '#06b6d4' },
+    ];
+
+    stats.forEach((st, i) => {
+      const cx = contentX + i * (cardW + cardGap);
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(cx, contentY, cardW, cardH, 8);
+      ctx.fill();
+
+      // Label
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(st.label, cx + 10, contentY + 16);
+
+      // Value
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(st.val, cx + 10, contentY + 36);
+
+      // Growth Badge
+      ctx.fillStyle = st.color;
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText(st.growth, cx + cardW - 42, contentY + 16);
+    });
+
+    // 5. Animated Graph / Analytics Chart Box
+    const chartY = contentY + cardH + 16;
+    const chartW = Math.max(120, contentW * 0.58);
+    const chartH = Math.max(80, mainH - cardH - 48);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(contentX, chartY, chartW, chartH, 10);
+    ctx.fill();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('Real-Time Performance Analytics', contentX + 14, chartY + 22);
+
+    // Bars
+    const numBars = 10;
+    const barW = Math.max(6, (chartW - 40) / numBars - 6);
+    let barX = contentX + 20;
+    const maxBarH = Math.max(20, chartH - 50);
+
+    for (let b = 0; b < numBars; b++) {
+      const wave = Math.sin(time * 2.5 + b * 0.6) * 0.25 + 0.6;
+      const barHeight = Math.max(10, maxBarH * wave);
+      const by = chartY + chartH - 18 - barHeight;
+
+      const grad = ctx.createLinearGradient(0, by, 0, by + barHeight);
+      grad.addColorStop(0, '#818cf8');
+      grad.addColorStop(1, '#3b82f6');
+      ctx.fillStyle = grad;
+
+      ctx.beginPath();
+      ctx.roundRect(barX, by, barW, barHeight, 3);
+      ctx.fill();
+
+      barX += barW + 6;
+    }
+
+    // 6. Recent Customer Activity Table Box
+    const tableX = contentX + chartW + 16;
+    const tableW = Math.max(100, contentW - chartW - 16);
+    const tableH = chartH;
+
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(tableX, chartY, tableW, tableH, 10);
+    ctx.fill();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('Recent Activity', tableX + 14, chartY + 22);
+
+    const rows = [
+      { name: 'Alex Rivers', status: 'Paid', price: '$1,490' },
+      { name: 'Sarah Chen', status: 'Active', price: '$299' },
+      { name: 'Elena Rostova', status: 'Active', price: '$299' },
+      { name: 'Marcus Vance', status: 'Paid', price: '$49' },
+    ];
+
+    let rowY = chartY + 44;
+    rows.forEach((r) => {
+      ctx.fillStyle = '#334155';
+      ctx.beginPath();
+      ctx.arc(tableX + 18, rowY + 8, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(r.name, tableX + 32, rowY + 12);
+
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillText(r.status, tableX + tableW - 75, rowY + 12);
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText(r.price, tableX + tableW - 38, rowY + 12);
+
+      rowY += 28;
+    });
+  };
+
+  // Helper to draw mobile responsive application UI onto 2D canvas context
+  const drawMobileAppUI = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    siteId: string,
+    url: string,
+    time: number
+  ) => {
+    // Mobile Screen Background Fill
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x, y, w, h);
+
+    // Status Bar (Top time 9:41 & indicator)
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillText('9:41', x + 12, y + 14);
+
+    ctx.fillStyle = '#10b981';
+    ctx.beginPath();
+    ctx.arc(x + w - 16, y + 10, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mobile App Header
+    const headerY = y + 20;
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x, headerY, w, 32);
+
+    ctx.fillStyle = '#3b82f6';
+    ctx.beginPath();
+    ctx.roundRect(x + 10, headerY + 5, 22, 22, 5);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText('DuaEn Mobile', x + 38, headerY + 19);
+
+    // Search Pill
+    const bodyY = headerY + 38;
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(x + 10, bodyY, w - 20, 24, 6);
+    ctx.fill();
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('🔍 Search mobile app...', x + 20, bodyY + 16);
+
+    // Stacked Metric Card 1
+    const mCardY = bodyY + 32;
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(x + 10, mCardY, w - 20, 50, 8);
+    ctx.fill();
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('Total Revenue Today', x + 18, mCardY + 15);
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText('$12,480.00', x + 18, mCardY + 36);
+
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText('+18.4%', x + w - 48, mCardY + 36);
+
+    // Stacked Metric Card 2
+    const mCardY2 = mCardY + 58;
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(x + 10, mCardY2, w - 20, 50, 8);
+    ctx.fill();
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('Active Mobile Users', x + 18, mCardY2 + 15);
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText('1,842 Live', x + 18, mCardY2 + 36);
+
+    // Mobile Animated Mini Chart
+    const mChartY = mCardY2 + 58;
+    const mChartH = Math.max(50, h - (mChartY - y) - 40);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(x + 10, mChartY, w - 20, mChartH, 8);
+    ctx.fill();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillText('Hourly Traffic', x + 16, mChartY + 16);
+
+    const numMBars = 6;
+    const mBarW = Math.max(4, (w - 48) / numMBars - 4);
+    let mBarX = x + 16;
+
+    for (let b = 0; b < numMBars; b++) {
+      const wave = Math.sin(time * 2.5 + b * 0.7) * 0.25 + 0.55;
+      const bh = Math.max(8, (mChartH - 26) * wave);
+      const by = mChartY + mChartH - 8 - bh;
+
+      ctx.fillStyle = '#6366f1';
+      ctx.beginPath();
+      ctx.roundRect(mBarX, by, mBarW, bh, 2);
+      ctx.fill();
+
+      mBarX += mBarW + 4;
+    }
+
+    // Mobile Bottom Bar
+    const navBarY = y + h - 30;
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(x, navBarY, w, 30);
+
+    const navIcons = ['🏠', '📊', '👥', '⚙️'];
+    const stepX = w / 4;
+    navIcons.forEach((icon, idx) => {
+      ctx.font = '11px sans-serif';
+      ctx.fillText(icon, x + idx * stepX + stepX / 2 - 5, navBarY + 18);
+    });
+  };
 
   // Helper function to render custom cursor styles on canvas
   const drawCustomCursor = (

@@ -30,7 +30,7 @@ export function getMimeTypeForFormat(format: VideoFormat): string {
 
 export async function exportVideoFile({ blob, format, filename, resolution, fps }: ExportVideoOptions): Promise<void> {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const defaultName = filename || `AutoDocRec_Tutorial_${resolution || '1080p'}_${fps || 60}fps_${timestamp}.${format}`;
+  const defaultName = filename || `DuaEn_Studio_${resolution || '1080p'}_${fps || 60}fps_${timestamp}.${format}`;
 
   let finalBlob = blob;
 
