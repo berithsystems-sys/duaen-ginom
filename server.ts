@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 
 async function startServer() {
@@ -11,6 +12,48 @@ async function startServer() {
   // Health check endpoint
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok", service: "AutoDoc Rec Studio", timestamp: new Date().toISOString() });
+  });
+
+  // Comprehensive debug test API endpoint for hosting diagnostic
+  app.get("/api/debug", (req, res) => {
+    const cwd = process.cwd();
+    const distPath = path.join(cwd, "dist");
+    const indexPath = path.join(distPath, "index.html");
+    const bundlePath = path.join(distPath, "server.cjs");
+
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      service: "AutoDoc Rec Studio",
+      nodeVersion: process.version,
+      platform: process.platform,
+      arch: process.arch,
+      env: {
+        NODE_ENV: process.env.NODE_ENV || "not set",
+        PORT: process.env.PORT || "not set",
+      },
+      paths: {
+        cwd,
+        distPath,
+        distExists: fs.existsSync(distPath),
+        indexHtmlExists: fs.existsSync(indexPath),
+        serverBundleExists: fs.existsSync(bundlePath),
+      },
+      process: {
+        uptimeSeconds: Math.floor(process.uptime()),
+        pid: process.pid,
+        memoryUsageMB: {
+          rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
+          heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+        },
+      },
+      request: {
+        host: req.headers.host,
+        userAgent: req.headers["user-agent"],
+        ip: req.ip || req.socket.remoteAddress,
+      },
+    });
   });
 
   // Website preview CORS proxy endpoint
@@ -115,7 +158,23 @@ async function startServer() {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*", (_req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const indexPath = path.join(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(500).send(`
+          <!DOCTYPE html>
+          <html>
+            <head><title>AutoDoc Rec Studio - Build Required</title></head>
+            <body style="font-family: sans-serif; padding: 40px; text-align: center; background: #0f172a; color: #f8fafc;">
+              <h1 style="color: #ef4444;">dist/index.html Not Found</h1>
+              <p>The application frontend build files are missing on the server.</p>
+              <p>Please run <code>npm run build</code> in your Hostinger Node.js Terminal or via deployment hooks.</p>
+              <p><a href="/api/debug" style="color: #38bdf8;">View Debug Info (/api/debug)</a> | <a href="/api/health" style="color: #38bdf8;">Health Check (/api/health)</a></p>
+            </body>
+          </html>
+        `);
+      }
     });
   }
 
